@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -14,8 +13,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class User extends BaseEntity {
-    public static final int MAX_CARDS = 5;
-
     @Column(nullable = false, length = 100)
     private String name;
 
@@ -32,19 +29,9 @@ public class User extends BaseEntity {
     private boolean active = true;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private List<PaymentCard> cards = new ArrayList<>();
 
-    public List<PaymentCard> getCards() {
-        return Collections.unmodifiableList(cards);
-    }
-
     public void addCard(PaymentCard card) {
-        if (cards.size() >= MAX_CARDS) {
-            throw new IllegalStateException("User cannot have more than 5 cards");
-        }
-
         cards.add(card);
         card.setUser(this);
     }
@@ -52,12 +39,5 @@ public class User extends BaseEntity {
     public void removeCard(PaymentCard card) {
         cards.remove(card);
         card.setUser(null);
-    }
-
-    @PrePersist
-    private void checkCardsLimitOnCreate() {
-        if (cards.size() > MAX_CARDS) {
-            throw new IllegalStateException("User cannot have more than 5 cards");
-        }
     }
 }
