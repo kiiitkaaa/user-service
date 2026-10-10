@@ -27,6 +27,7 @@ public final class CardSpecifications {
         }
         String pattern = SpecificationUtils.toLikePattern(value);
         return (root, _, cb) ->
-                cb.like(cb.lower(root.join("user").get(field)), pattern);
+                cb.like(cb.lower(root.join("user").get(field)),
+                        pattern, SpecificationUtils.LIKE_ESCAPE);
     }
 }

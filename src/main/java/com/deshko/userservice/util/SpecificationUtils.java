@@ -1,6 +1,8 @@
 package com.deshko.userservice.util;
 
 public final class SpecificationUtils {
+    public static final char LIKE_ESCAPE = '\\';
+
     private SpecificationUtils() {
         throw new UnsupportedOperationException("Utility class");
     }

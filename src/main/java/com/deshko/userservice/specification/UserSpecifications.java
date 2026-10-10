@@ -5,8 +5,6 @@ import org.springframework.data.jpa.domain.Specification;
 import com.deshko.userservice.util.SpecificationUtils;
 
 public final class UserSpecifications {
-    private static final char LIKE_ESCAPE = '\\';
-
     private UserSpecifications() {
         throw new UnsupportedOperationException("Utility class");
     }
@@ -29,6 +27,6 @@ public final class UserSpecifications {
         }
         String pattern = SpecificationUtils.toLikePattern(value);
         return (root, _, cb) ->
-                cb.like(cb.lower(root.get(field)), pattern, LIKE_ESCAPE);
+                cb.like(cb.lower(root.get(field)), pattern, SpecificationUtils.LIKE_ESCAPE);
     }
 }
