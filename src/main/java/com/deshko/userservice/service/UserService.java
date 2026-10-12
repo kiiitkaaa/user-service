@@ -1,6 +1,7 @@
 package com.deshko.userservice.service;
 
 import com.deshko.userservice.config.BusinessRules;
+import com.deshko.userservice.config.CacheConfig;
 import com.deshko.userservice.dto.PaymentCardRequestDto;
 import com.deshko.userservice.dto.UserRequestDto;
 import com.deshko.userservice.dto.UserResponseDto;
@@ -13,6 +14,9 @@ import com.deshko.userservice.mapper.UserMapper;
 import com.deshko.userservice.repository.PaymentCardRepository;
 import com.deshko.userservice.repository.UserRepository;
 import com.deshko.userservice.specification.UserSpecifications;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -53,6 +57,7 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheConfig.USERS_CACHE, key = "#id")
     public UserResponseDto getById(Long id) {
         return userMapper.toDto(findUserWithCards(id));
     }
@@ -65,25 +70,28 @@ public class UserService {
     }
 
     @Transactional
+    @CachePut(cacheNames = CacheConfig.USERS_CACHE, key = "#id")
     public UserResponseDto update(Long id, UserRequestDto dto) {
         User user = findUserWithCards(id);
         if (!user.getEmail().equalsIgnoreCase(dto.email()) && userRepository.existsByEmail(dto.email())) {
             throw new DuplicateResourceException("User with email " + dto.email() + " already exists");
         }
         userRepository.updateById(id, dto.name(), dto.surname(), dto.birthDate(), dto.email());
-        return getById(id);
+        return loadUser(id);
     }
 
     @Transactional
+    @CachePut(cacheNames = CacheConfig.USERS_CACHE, key = "#id")
     public UserResponseDto setActive(Long id, boolean active) {
         if (!userRepository.existsById(id)) {
             throw new ResourceNotFoundException("User", id);
         }
         userRepository.updateActiveById(id, active);
-        return getById(id);
+        return loadUser(id);
     }
 
     @Transactional
+    @CacheEvict(cacheNames = CacheConfig.USERS_CACHE, key = "#id")
     public void delete(Long id) {
         userRepository.delete(findUserWithCards(id));
     }
@@ -91,5 +99,9 @@ public class UserService {
     private User findUserWithCards(Long id) {
         return userRepository.findByIdWithCards(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
+    }
+
+    private UserResponseDto loadUser(Long id) {
+        return userMapper.toDto(findUserWithCards(id));
     }
 }
