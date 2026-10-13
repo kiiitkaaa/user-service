@@ -24,7 +24,7 @@ public class PaymentCardController {
                                                          @Valid @RequestBody PaymentCardRequestDto dto) {
         PaymentCardResponseDto created = paymentCardService.create(userId, dto);
         URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/api/cards/{id}")
+                .path("/api/v1/cards/{id}")
                 .buildAndExpand(created.id())
                 .toUri();
         return ResponseEntity.created(location).body(created);
