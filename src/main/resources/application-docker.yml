@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/${DOCKER_DB_NAME}
+    username: ${DOCKER_DB_USERNAME}
+    password: ${DOCKER_DB_PASSWORD}
+
+  data:
+    redis:
+      host: redis
+      port: 6379
+      password: ${DOCKER_REDIS_PASSWORD}
