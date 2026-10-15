@@ -85,8 +85,7 @@ jobs:
 
       - name: SonarQube scan
         run: >
-          mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
-          -Dsonar.qualitygate.wait=true
+          mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:5.8.0.7211:sonar
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
