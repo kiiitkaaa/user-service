@@ -23,7 +23,7 @@ public class UserCacheIntegrationTest extends AbstractIntegrationTest {
         User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
         assertThat(usersCache().get(user.getId())).isNull();
 
-        mockMvc.perform(get("/api/v1/users/{id}", user.getId()))
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId()).with(user(user.getId())))
                 .andExpect(status().isOk());
         assertThat(usersCache().get(user.getId())).isNotNull();
 
@@ -31,23 +31,24 @@ public class UserCacheIntegrationTest extends AbstractIntegrationTest {
         stored.setName("Changed");
         userRepository.save(stored);
 
-        mockMvc.perform(get("/api/v1/users/{id}", user.getId()))
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId()).with(user(user.getId())))
                 .andExpect(jsonPath("$.name").value("Ivan"));
     }
 
     @Test
     void updateUser_refreshesCache() throws Exception {
         User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
-        mockMvc.perform(get("/api/v1/users/{id}", user.getId())).andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId()).with(user(user.getId())))
+                .andExpect(status().isOk());
 
         UserRequestDto body = new UserRequestDto("Petr", "Ivanov",
                 LocalDate.of(1990, 2, 2), "petr@mail.com", null);
         mockMvc.perform(put("/api/v1/users/{id}", user.getId())
+                        .with(user(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(body)))
                 .andExpect(status().isOk());
-
-        mockMvc.perform(get("/api/v1/users/{id}", user.getId()))
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId()).with(user(user.getId())))
                 .andExpect(jsonPath("$.name").value("Petr"))
                 .andExpect(jsonPath("$.email").value("petr@mail.com"));
     }
@@ -55,43 +56,44 @@ public class UserCacheIntegrationTest extends AbstractIntegrationTest {
     @Test
     void deactivateUser_refreshesCache() throws Exception {
         User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
-        mockMvc.perform(get("/api/v1/users/{id}", user.getId())).andExpect(status().isOk());
-
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId()).with(user(user.getId())))
+                .andExpect(status().isOk());
         mockMvc.perform(patch("/api/v1/users/{id}/status", user.getId())
+                        .with(admin())
                         .param("active", "false"))
                 .andExpect(status().isOk());
-
-        mockMvc.perform(get("/api/v1/users/{id}", user.getId()))
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId()).with(user(user.getId())))
                 .andExpect(jsonPath("$.active").value(false));
     }
 
     @Test
     void deleteUser_evictsCache() throws Exception {
         User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
-        mockMvc.perform(get("/api/v1/users/{id}", user.getId())).andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId()).with(user(user.getId())))
+                .andExpect(status().isOk());
         assertThat(usersCache().get(user.getId())).isNotNull();
-
-        mockMvc.perform(delete("/api/v1/users/{id}",
-                user.getId())).andExpect(status().isNoContent());
-
+        mockMvc.perform(delete("/api/v1/users/{id}", user.getId()).with(user(user.getId())))
+                .andExpect(status().isNoContent());
         assertThat(usersCache().get(user.getId())).isNull();
-        mockMvc.perform(get("/api/v1/users/{id}", user.getId())).andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId()).with(admin()))
+                .andExpect(status().isNotFound());
     }
 
     @Test
     void createCard_evictsUserCache_soNewCardIsVisible() throws Exception {
         User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
-        mockMvc.perform(get("/api/v1/users/{id}", user.getId()))
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId())
+                        .with(user(user.getId())))
                 .andExpect(jsonPath("$.cards", hasSize(0)));
         assertThat(usersCache().get(user.getId())).isNotNull();
-
         mockMvc.perform(post("/api/v1/users/{userId}/cards", user.getId())
+                        .with(user(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(cardRequest("1111111111111111"))))
                 .andExpect(status().isCreated());
 
         assertThat(usersCache().get(user.getId())).isNull();
-        mockMvc.perform(get("/api/v1/users/{id}", user.getId()))
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId()).with(user(user.getId())))
                 .andExpect(jsonPath("$.cards", hasSize(1)));
     }
 
@@ -100,16 +102,17 @@ public class UserCacheIntegrationTest extends AbstractIntegrationTest {
         User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
         PaymentCard card = saveCard(user, "1111111111111111");
 
-        mockMvc.perform(get("/api/v1/users/{id}", user.getId())).andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId()).with(user(user.getId())))
+                .andExpect(status().isOk());
         mockMvc.perform(patch("/api/v1/cards/{id}/status", card.getId())
+                        .with(user(user.getId()))
                         .param("active", "false"))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/api/v1/users/{id}", user.getId()))
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId()).with(user(user.getId())))
                 .andExpect(jsonPath("$.cards[0].active").value(false));
-
-        mockMvc.perform(delete("/api/v1/cards/{id}",
-                card.getId())).andExpect(status().isNoContent());
-        mockMvc.perform(get("/api/v1/users/{id}", user.getId()))
+        mockMvc.perform(delete("/api/v1/cards/{id}", card.getId()).with(user(user.getId())))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId()).with(user(user.getId())))
                 .andExpect(jsonPath("$.cards", hasSize(0)));
     }
 }

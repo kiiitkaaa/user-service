@@ -88,7 +88,8 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
         saveCard(user, "1111111111111111");
 
-        mockMvc.perform(get("/api/v1/users/{id}", user.getId()))
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId())
+                        .with(user(user.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("ivan@mail.com"))
                 .andExpect(jsonPath("$.cards", hasSize(1)))
@@ -97,10 +98,21 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void getUserById_notFound_returns404() throws Exception {
-        mockMvc.perform(get("/api/v1/users/{id}", 999999))
+        mockMvc.perform(get("/api/v1/users/{id}", 999999)
+                        .with(admin()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message").exists());
+    }
+
+    @Test
+    void getUserById_foreignUser_returns403() throws Exception {
+        User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
+        saveUser("Anna", "Petrova", "anna@mail.com");
+
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId())
+                        .with(user(999L)))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -110,6 +122,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         saveUser("Anna", "Petrova", "anna@mail.com");
 
         mockMvc.perform(get("/api/v1/users")
+                        .with(admin())
                         .param("name", "ivan")
                         .param("size", "1")
                         .param("page", "0")
@@ -121,6 +134,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.content[0].surname").value("Petrov"));
 
         mockMvc.perform(get("/api/v1/users")
+                        .with(admin())
                         .param("name", "ivan")
                         .param("surname", "sid"))
                 .andExpect(jsonPath("$.totalElements").value(1))
@@ -129,7 +143,9 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void getAllUsers_unknownSortProperty_returns400() throws Exception {
-        mockMvc.perform(get("/api/v1/users").param("sort", "nonexistent,asc"))
+        mockMvc.perform(get("/api/v1/users")
+                        .with(admin())
+                        .param("sort", "nonexistent,asc"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -140,6 +156,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 LocalDate.of(1990, 2, 2), "petr@mail.com", null);
 
         mockMvc.perform(put("/api/v1/users/{id}", user.getId())
+                        .with(user(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(body)))
                 .andExpect(status().isOk())
@@ -157,6 +174,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
 
         mockMvc.perform(put("/api/v1/users/{id}", user.getId())
+                        .with(user(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(userRequest("anna@mail.com", null))))
                 .andExpect(status().isConflict());
@@ -165,6 +183,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     void updateUser_notFound_returns404() throws Exception {
         mockMvc.perform(put("/api/v1/users/{id}", 999999)
+                        .with(admin())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(userRequest("ivan@mail.com", null))))
                 .andExpect(status().isNotFound());
@@ -175,12 +194,14 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
 
         mockMvc.perform(patch("/api/v1/users/{id}/status", user.getId())
+                        .with(admin())
                         .param("active", "false"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active").value(false));
         assertThat(userRepository.findById(user.getId()).orElseThrow().isActive()).isFalse();
 
         mockMvc.perform(patch("/api/v1/users/{id}/status", user.getId())
+                        .with(admin())
                         .param("active", "true"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active").value(true));
@@ -193,13 +214,15 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         saveCard(user, "1111111111111111");
         saveCard(user, "2222222222222222");
 
-        mockMvc.perform(delete("/api/v1/users/{id}", user.getId()))
+        mockMvc.perform(delete("/api/v1/users/{id}", user.getId())
+                        .with(user(user.getId())))
                 .andExpect(status().isNoContent());
 
         assertThat(userRepository.findById(user.getId())).isEmpty();
         assertThat(cardRepository.count()).isZero();
 
-        mockMvc.perform(get("/api/v1/users/{id}", user.getId()))
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId())
+                        .with(admin()))
                 .andExpect(status().isNotFound());
     }
 }
