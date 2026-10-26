@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 @EnableMethodSecurity
 public class SecurityConfig {
     @Bean
-    SecurityFilterChain filterChain(HttpSecurity http, ApiSecurityHandler handler) throws Exception {
+    SecurityFilterChain filterChain(HttpSecurity http, ApiSecurityHandler handler) {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s ->
