@@ -42,4 +42,5 @@ public interface PaymentCardRepository extends
     @Query(value = "UPDATE payment_cards SET active = :active, updated_at = CURRENT_TIMESTAMP WHERE id = :id",
             nativeQuery = true)
     int updateActiveById(@Param("id") Long id, @Param("active") boolean active);
+    boolean existsByIdAndUserId(Long id, Long userId);
 }
