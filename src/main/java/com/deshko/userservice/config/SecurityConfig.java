@@ -1,6 +1,6 @@
 package com.deshko.userservice.config;
 
-import com.deshko.userservice.exception.ApiSecurityHandler;
+import com.deshko.userservice.util.ApiSecurityHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
