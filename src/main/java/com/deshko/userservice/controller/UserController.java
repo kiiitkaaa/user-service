@@ -9,9 +9,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -29,12 +32,19 @@ public class UserController {
         return ResponseEntity.created(location).body(created);
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<UserResponseDto> getMe(@AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(userService.getById(Long.valueOf(jwt.getSubject())));
+    }
+
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or #id.toString() == authentication.name")
     public ResponseEntity<UserResponseDto> getById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getById(id));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PageResponseDto<UserResponseDto>> getAll(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String surname,
@@ -43,18 +53,21 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or #id.toString() == authentication.name")
     public ResponseEntity<UserResponseDto> update(@PathVariable Long id,
                                                   @Valid @RequestBody UserRequestDto dto) {
         return ResponseEntity.ok(userService.update(id, dto));
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponseDto> changeStatus(@PathVariable Long id,
                                                         @RequestParam boolean active) {
         return ResponseEntity.ok(userService.setActive(id, active));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or #id.toString() == authentication.name")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         userService.delete(id);
         return ResponseEntity.noContent().build();

@@ -18,6 +18,7 @@ class CardControllerIntegrationTest extends AbstractIntegrationTest {
         User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
 
         mockMvc.perform(post("/api/v1/users/{userId}/cards", user.getId())
+                        .with(user(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(cardRequest("1111111111111111"))))
                 .andExpect(status().isCreated())
@@ -36,6 +37,7 @@ class CardControllerIntegrationTest extends AbstractIntegrationTest {
         }
 
         mockMvc.perform(post("/api/v1/users/{userId}/cards", user.getId())
+                        .with(user(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(cardRequest("9999999999999999"))))
                 .andExpect(status().isConflict());
@@ -51,6 +53,7 @@ class CardControllerIntegrationTest extends AbstractIntegrationTest {
         }
 
         mockMvc.perform(post("/api/v1/users/{userId}/cards", user.getId())
+                        .with(user(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(cardRequest("9999999999999999"))))
                 .andExpect(status().isCreated());
@@ -62,6 +65,7 @@ class CardControllerIntegrationTest extends AbstractIntegrationTest {
         saveCard(user, "1111111111111111");
 
         mockMvc.perform(post("/api/v1/users/{userId}/cards", user.getId())
+                        .with(user(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(cardRequest("1111111111111111"))))
                 .andExpect(status().isConflict());
@@ -70,6 +74,7 @@ class CardControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     void createCard_userNotFound_returns404() throws Exception {
         mockMvc.perform(post("/api/v1/users/{userId}/cards", 999999)
+                        .with(user(999999L))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(cardRequest("1111111111111111"))))
                 .andExpect(status().isNotFound());
@@ -80,6 +85,7 @@ class CardControllerIntegrationTest extends AbstractIntegrationTest {
         User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
 
         mockMvc.perform(post("/api/v1/users/{userId}/cards", user.getId())
+                        .with(user(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(cardRequest("123"))))
                 .andExpect(status().isBadRequest())
@@ -91,12 +97,11 @@ class CardControllerIntegrationTest extends AbstractIntegrationTest {
         User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
         PaymentCard card = saveCard(user, "1111111111111111");
 
-        mockMvc.perform(get("/api/v1/cards/{id}", card.getId()))
+        mockMvc.perform(get("/api/v1/cards/{id}", card.getId()).with(user(user.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userId").value(user.getId()))
                 .andExpect(jsonPath("$.number").value("1111111111111111"));
-
-        mockMvc.perform(get("/api/v1/cards/{id}", 999999))
+        mockMvc.perform(get("/api/v1/cards/{id}", 999999).with(admin()))
                 .andExpect(status().isNotFound());
     }
 
@@ -109,13 +114,14 @@ class CardControllerIntegrationTest extends AbstractIntegrationTest {
         saveCard(ivan, "3333333333333333");
         saveCard(anna, "4444444444444444");
 
-        mockMvc.perform(get("/api/v1/users/{userId}/cards",
-                        ivan.getId()).param("size", "2"))
+        mockMvc.perform(get("/api/v1/users/{userId}/cards", ivan.getId())
+                        .with(user(ivan.getId()))
+                        .param("size", "2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(2)))
                 .andExpect(jsonPath("$.totalElements").value(3));
-
-        mockMvc.perform(get("/api/v1/users/{userId}/cards", 999999))
+        mockMvc.perform(get("/api/v1/users/{userId}/cards", 999999)
+                        .with(user(999999L)))
                 .andExpect(status().isNotFound());
     }
 
@@ -126,12 +132,16 @@ class CardControllerIntegrationTest extends AbstractIntegrationTest {
         saveCard(ivan, "1111111111111111");
         saveCard(anna, "2222222222222222");
 
-        mockMvc.perform(get("/api/v1/cards").param("name", "ivan"))
+        mockMvc.perform(get("/api/v1/cards")
+                        .with(admin())
+                        .param("name", "ivan"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.content[0].number").value("1111111111111111"));
 
-        mockMvc.perform(get("/api/v1/cards").param("surname", "petrov"))
+        mockMvc.perform(get("/api/v1/cards")
+                        .with(admin())
+                        .param("surname", "petrov"))
                 .andExpect(jsonPath("$.totalElements").value(2));
     }
 
@@ -143,6 +153,7 @@ class CardControllerIntegrationTest extends AbstractIntegrationTest {
                 "2222222222222222", "NEW HOLDER", LocalDate.now().plusYears(5));
 
         mockMvc.perform(put("/api/v1/cards/{id}", card.getId())
+                        .with(user(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(body)))
                 .andExpect(status().isOk())
@@ -161,6 +172,7 @@ class CardControllerIntegrationTest extends AbstractIntegrationTest {
         PaymentCard second = saveCard(user, "2222222222222222");
 
         mockMvc.perform(put("/api/v1/cards/{id}", second.getId())
+                        .with(user(user.getId()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(cardRequest("1111111111111111"))))
                 .andExpect(status().isConflict());
@@ -172,12 +184,14 @@ class CardControllerIntegrationTest extends AbstractIntegrationTest {
         PaymentCard card = saveCard(user, "1111111111111111");
 
         mockMvc.perform(patch("/api/v1/cards/{id}/status", card.getId())
+                        .with(user(user.getId()))
                         .param("active", "false"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active").value(false));
         assertThat(cardRepository.findById(card.getId()).orElseThrow().isActive()).isFalse();
 
         mockMvc.perform(patch("/api/v1/cards/{id}/status", card.getId())
+                        .with(user(user.getId()))
                         .param("active", "true"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active").value(true));
@@ -189,13 +203,15 @@ class CardControllerIntegrationTest extends AbstractIntegrationTest {
         User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
         PaymentCard card = saveCard(user, "1111111111111111");
 
-        mockMvc.perform(delete("/api/v1/cards/{id}", card.getId()))
+        mockMvc.perform(delete("/api/v1/cards/{id}", card.getId())
+                        .with(user(user.getId())))
                 .andExpect(status().isNoContent());
 
         assertThat(cardRepository.findById(card.getId())).isEmpty();
         assertThat(userRepository.findById(user.getId())).isPresent();
 
-        mockMvc.perform(delete("/api/v1/cards/{id}", card.getId()))
+        mockMvc.perform(delete("/api/v1/cards/{id}", card.getId())
+                        .with(admin()))
                 .andExpect(status().isNotFound());
     }
 }

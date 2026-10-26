@@ -45,6 +45,7 @@ services:
       DOCKER_DB_USERNAME: ${DOCKER_DB_USERNAME}
       DOCKER_DB_PASSWORD: ${DOCKER_DB_PASSWORD}
       DOCKER_REDIS_PASSWORD: ${DOCKER_REDIS_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
     ports:
       - "8080:8080"
     restart: unless-stopped
