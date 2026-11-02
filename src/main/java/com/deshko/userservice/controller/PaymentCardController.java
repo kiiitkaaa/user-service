@@ -3,6 +3,7 @@ package com.deshko.userservice.controller;
 import com.deshko.userservice.dto.PageResponseDto;
 import com.deshko.userservice.dto.PaymentCardRequestDto;
 import com.deshko.userservice.dto.PaymentCardResponseDto;
+import com.deshko.userservice.security.GatewayUser;
 import com.deshko.userservice.service.PaymentCardService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -24,16 +24,16 @@ public class PaymentCardController {
 
     @PostMapping("/users/me/cards")
     public ResponseEntity<PaymentCardResponseDto> createMine(
-            @AuthenticationPrincipal Jwt jwt,
+            @AuthenticationPrincipal GatewayUser user,
             @Valid @RequestBody PaymentCardRequestDto dto) {
-        return create(Long.valueOf(jwt.getSubject()), dto);
+        return create(user.id(), dto);
     }
 
     @GetMapping("/users/me/cards")
     public ResponseEntity<PageResponseDto<PaymentCardResponseDto>> getMine(
-            @AuthenticationPrincipal Jwt jwt,
+            @AuthenticationPrincipal GatewayUser user,
             @PageableDefault(size = 10, sort = "id") Pageable pageable) {
-        return getAllByUserId(Long.valueOf(jwt.getSubject()), pageable);
+        return getAllByUserId(user.id(), pageable);
     }
 
     @PostMapping("/users/{userId}/cards")
