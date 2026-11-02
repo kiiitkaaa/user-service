@@ -13,7 +13,9 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     @Query("select u from User u left join fetch u.cards where u.id = :id")
     Optional<User> findByIdWithCards(@Param("id") Long id);
 
-    Optional<User> findByEmail(String email);
+    @Query("select u from User u left join fetch u.cards where lower(u.email) = lower(:email)")
+    Optional<User> findByEmail(@Param("email") String email);
+
     boolean existsByEmail(String email);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
