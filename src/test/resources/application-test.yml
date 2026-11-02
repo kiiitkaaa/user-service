@@ -1,2 +1,0 @@
-jwt:
-  secret: test-secret-key-for-integration-tests-0123456789abcdef
