@@ -1,4 +1,4 @@
-package com.deshko.userservice.util;
+package com.deshko.userservice.security;
 
 import com.deshko.userservice.dto.ApiError;
 import org.junit.jupiter.api.Test;
