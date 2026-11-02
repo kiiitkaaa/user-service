@@ -63,6 +63,13 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
+    public UserResponseDto getByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", email));
+        return userMapper.toDto(user);
+    }
+
+    @Transactional(readOnly = true)
     public Page<UserResponseDto> getAll(String name, String surname, Pageable pageable) {
         return userRepository
                 .findAll(UserSpecifications.byNameAndSurname(name, surname), pageable)
