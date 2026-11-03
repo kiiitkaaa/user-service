@@ -1,6 +1,7 @@
 package com.deshko.userservice.integration;
 
 import com.deshko.userservice.dto.UserRequestDto;
+import com.deshko.userservice.filter.GatewayHeaderAuthenticationFilter;
 import org.junit.jupiter.api.Test;
 import java.util.List;
 import com.deshko.userservice.dto.PaymentCardRequestDto;
@@ -222,6 +223,77 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(cardRepository.count()).isZero();
 
         mockMvc.perform(get("/api/v1/users/{id}", user.getId())
+                        .with(admin()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getUserById_withoutGatewayHeaders_returns401() throws Exception {
+        User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
+
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId()))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/v1/users").param("name", "ivan"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getUserById_malformedUserIdHeader_returns401() throws Exception {
+        User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
+
+        mockMvc.perform(get("/api/v1/users/{id}", user.getId())
+                        .header(GatewayHeaderAuthenticationFilter.USER_ID, "not-a-number")
+                        .header(GatewayHeaderAuthenticationFilter.USER_ROLE, "USER")
+                        .header(GatewayHeaderAuthenticationFilter.USER_EMAIL, "ivan@mail.com"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getByEmail_adminReturnsAnyUser() throws Exception {
+        User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
+
+        mockMvc.perform(get("/api/v1/users/email/{email}", "ivan@mail.com")
+                        .with(admin()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("ivan@mail.com"))
+                .andExpect(jsonPath("$.id").value(user.getId()));
+    }
+
+    @Test
+    void getByEmail_ownerReturnsOwnUser() throws Exception {
+        User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
+
+        mockMvc.perform(get("/api/v1/users/email/{email}", "ivan@mail.com")
+                        .with(user(user.getId(), "ivan@mail.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("ivan@mail.com"))
+                .andExpect(jsonPath("$.id").value(user.getId()));
+    }
+
+    @Test
+    void getByEmail_foreignUserReturns403() throws Exception {
+        saveUser("Ivan", "Petrov", "ivan@mail.com");
+        User other = saveUser("Anna", "Petrova", "anna@mail.com");
+
+        mockMvc.perform(get("/api/v1/users/email/{email}", "ivan@mail.com")
+                        .with(user(other.getId())))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getByEmail_caseInsensitive_forOwner() throws Exception {
+        User user = saveUser("Ivan", "Petrov", "ivan@mail.com");
+
+        mockMvc.perform(get("/api/v1/users/email/{email}", "IVAN@MAIL.COM")
+                        .with(user(user.getId(), "ivan@mail.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("ivan@mail.com"));
+    }
+
+    @Test
+    void getByEmail_notFound_returns404() throws Exception {
+        mockMvc.perform(get("/api/v1/users/email/{email}", "nobody@mail.com")
                         .with(admin()))
                 .andExpect(status().isNotFound());
     }

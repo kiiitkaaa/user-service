@@ -1,5 +1,6 @@
 package com.deshko.userservice.controller;
 
+import com.deshko.userservice.security.GatewayUser;
 import com.deshko.userservice.dto.PageResponseDto;
 import com.deshko.userservice.dto.UserRequestDto;
 import com.deshko.userservice.dto.UserResponseDto;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -33,8 +33,14 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponseDto> getMe(@AuthenticationPrincipal Jwt jwt) {
-        return ResponseEntity.ok(userService.getById(Long.valueOf(jwt.getSubject())));
+    public ResponseEntity<UserResponseDto> getMe(@AuthenticationPrincipal GatewayUser user) {
+        return ResponseEntity.ok(userService.getById(user.id()));
+    }
+
+    @GetMapping("/email/{email}")
+    @PreAuthorize("hasRole('ADMIN') or #email.equalsIgnoreCase(authentication.principal.email())")
+    public ResponseEntity<UserResponseDto> getByEmail(@PathVariable String email) {
+        return ResponseEntity.ok(userService.getByEmail(email));
     }
 
     @GetMapping("/{id}")
